@@ -1,7 +1,10 @@
 /**
  * sampler.js is a plugin to display code samples from specially-formatted
- * source files in reveal.js slides. See https://github.com/ldionne/sampler.js
- * for documentation, bug reports and others.
+ * source files in reveal.js slides.
+ *
+ * See https://github.com/ldionne/reveal-sampler for documentation,
+ * bug reports and more.
+ *
  *
  * Author: Louis Dionne
  * License: sampler.js is placed in the public domain
