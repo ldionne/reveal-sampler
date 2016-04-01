@@ -33,7 +33,7 @@
                 throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
             }
 
-            element.innerHTML = sample[1];
+            $(element).text(sample[1]);
             $(element).addClass("cpp");
         }});
     });
