@@ -22,8 +22,6 @@
     $(".sample").each(function(i, element) {
         var slug = element.getAttribute('sample').match(/([^#]+)#(.+)/);
         var file = slug[1], sampleName = slug[2];
-        // var beginTag = RegExp.new(/sample\(/.source + escapeForRegexp(sampleName) + /\)/.source);
-        // var endTag = /end-sample/;
 
         var sampleRegexp = new RegExp(
             // match 'sample(sampleName)'
