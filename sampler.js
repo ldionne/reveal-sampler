@@ -22,10 +22,16 @@
     $(".sample").each(function(i, element) {
         var slug = element.getAttribute('sample').match(/([^#]+)#(.+)/);
         var file = slug[1], sampleName = slug[2];
+        // var beginTag = RegExp.new(/sample\(/.source + escapeForRegexp(sampleName) + /\)/.source);
+        // var endTag = /end-sample/;
+
         var sampleRegexp = new RegExp(
-            /^\/\/\s*sample\(/.source + escapeForRegexp(sampleName) + /\)\s*/.source + // match '// sample(sampleName)'
-            /^([\s\S]*?)/.source +                                                     // match anything in between
-            /^\/\/\s*end-sample/.source, 'm');                                         // match '// end-sample'
+            // match 'sample(sampleName)'
+            /sample\(/.source + escapeForRegexp(sampleName) + /\)[^\n]*\n/.source +
+            // match anything in between
+            /^([\s\S]*?)/.source +
+            // match 'end-sample'
+            /^[^\n]*end-sample/.source, 'm');
 
         $.ajax({url: file, success: function(code) {
             var sample = code.match(sampleRegexp);
@@ -33,8 +39,9 @@
                 throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
             }
 
+            var extension = file.split('.').pop();
             $(element).text(sample[1]);
-            $(element).addClass("cpp");
+            $(element).addClass("language-" + extension);
         }});
     });
 })();
