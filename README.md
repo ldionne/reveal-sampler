@@ -43,6 +43,9 @@ whose path is given, and write it inside the `<code>` tag. It will also
 add the `cpp` class to the `<code>` tag, so that code highlighting triggers
 properly if set up.
 
+You can find an example of using the `sampler.js` plugin in the `example/`
+directory.
+
 
 ### License
 `sampler.js` is placed in the public domain.
