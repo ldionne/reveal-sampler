@@ -20,7 +20,7 @@
     }
 
     if (typeof hljs == 'undefined') {
-        console.log('Highlight.js is not available; code highlighting might not work.');
+        console.log('Highlight.js is not loaded (yet); code highlighting might not work.');
     }
 
     $(".sample").each(function(i, element) {
