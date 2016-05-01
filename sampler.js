@@ -39,7 +39,9 @@
 
             var extension = file.split('.').pop();
             $(element).text(sample[1]);
-            $(element).addClass("language-" + extension);
+            if (!$(element).is('[class*="language-"]') && !$(element).is('[class*="lang-"]')) {
+                $(element).addClass("language-" + extension);
+            }
             if (typeof hljs != 'undefined') {
                 hljs.highlightBlock(element);
             }

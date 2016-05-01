@@ -54,7 +54,10 @@ path is given, and write it inside the `<code>` tag. It will also add the
 `language-xxx` class to the `<code>` tag, where `xxx` is the extension of
 the source file, so that code highlighting triggers properly if set up. This
 usually works out of the box, because [highlight.js][] can recognize the
-extensions associated to most languages.
+extensions associated to most languages. If you need to explicitly set the
+language to use (e.g. because the file extension is misleading), set the
+`language-xxx` class yourself on the `<code>` tag and the plugin will leave
+it alone.
 
 You can find an example of using the `sampler.js` plugin in the `example/`
 directory.

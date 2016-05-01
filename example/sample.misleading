@@ -1,0 +1,9 @@
+
+// sample(main)
+// This file has a misleading extension, yet it highlights as C++
+#include <iostream>
+
+int main() {
+    std::cout << "Hello world!" << std::endl;
+}
+// end-sample
