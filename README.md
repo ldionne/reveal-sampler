@@ -42,8 +42,24 @@ allows commenting the tags:
 ```
 
 Multiple samples can appear in the same source file, as long as they have
-different names. Finally, to include a code sample in a slide, use `<code>`
-tags as follows:
+different names. If many samples have the same name, they will be considered
+as a single sample and concatenated together. For example, the following code
+will create a single sample with name 'sample-name':
+
+```c++
+// sample(sample-name)
+first part of the sample
+// end-sample
+
+some code not in the sample
+
+// sample(sample-name)
+second part of the sample
+// end-sample
+```
+
+This can be useful to avoid showing unimportant bits of code in a slide.
+Finally, to include a code sample in a slide, use `<code>` tags as follows:
 
 ```html
 <code class='sample' sample='path/to/source#sample-name'></code>

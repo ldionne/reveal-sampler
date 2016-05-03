@@ -29,16 +29,21 @@
             // match anything in between
             /^([\s\S]*?)/.source +
             // match 'end-sample'
-            /^[^\n]*end-sample/.source, 'm');
+            /^[^\n]*end-sample/.source, 'mg');
 
         $.ajax({url: file, success: function(code) {
-            var sample = code.match(sampleRegexp);
-            if (sample == null) {
+            var sample = null;
+            var match = null;
+            while ((match = sampleRegexp.exec(code)) !== null) {
+                sample = (sample || "") + match[1];
+            }
+
+            if (sample === null) {
                 throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
             }
 
             var extension = file.split('.').pop();
-            $(element).text(sample[1]);
+            $(element).text(sample);
             if (!$(element).is('[class*="language-"]') && !$(element).is('[class*="lang-"]')) {
                 $(element).addClass("language-" + extension);
             }
