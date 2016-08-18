@@ -20,22 +20,26 @@
     }
 
     $(".sample").each(function(i, element) {
-        var slug = element.getAttribute('sample').match(/([^#]+)#(.+)/);
+        var slug = element.getAttribute('sample').match(/([^#]+)(?:#(.+))?/);
         var file = slug[1], sampleName = slug[2];
-
-        var sampleRegexp = new RegExp(
-            // match 'sample(sampleName)'
-            /sample\(/.source + escapeForRegexp(sampleName) + /\)[^\n]*\n/.source +
-            // match anything in between
-            /^([\s\S]*?)/.source +
-            // match 'end-sample'
-            /^[^\n]*end-sample/.source, 'mg');
 
         $.ajax({url: file, success: function(code) {
             var sample = null;
-            var match = null;
-            while ((match = sampleRegexp.exec(code)) !== null) {
-                sample = (sample || "") + match[1];
+
+            if (sampleName === undefined) {
+                sample = code;
+            } else {
+                var sampleRegexp = new RegExp(
+                    // match 'sample(sampleName)'
+                    /sample\(/.source + escapeForRegexp(sampleName) + /\)[^\n]*\n/.source +
+                    // match anything in between
+                    /^([\s\S]*?)/.source +
+                    // match 'end-sample'
+                    /^[^\n]*end-sample/.source, 'mg');
+                var match = null;
+                while ((match = sampleRegexp.exec(code)) !== null) {
+                    sample = (sample || "") + match[1];
+                }
             }
 
             if (sample === null) {
