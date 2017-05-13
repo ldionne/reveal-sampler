@@ -42,6 +42,10 @@
                 }
             }
 
+            // Strip trailing newline in the sample (if any), since that is
+            // only required to insert the 'end-sample' tag.
+            sample = sample.replace(/\n$/, "");
+
             if (sample === null) {
                 throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
             }
