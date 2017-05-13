@@ -78,10 +78,6 @@ It's that simple! To get started, you can find an example of using the plugin
 in the `example/` directory.
 
 
-### License
-`sampler.js` is placed in the public domain.
-
-
 <!-- Links -->
 [highlight.js]: https://highlightjs.org
 [reveal.js]: https://github.com/hakimel/reveal.js/

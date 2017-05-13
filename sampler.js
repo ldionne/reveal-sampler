@@ -7,7 +7,7 @@
  *
  *
  * Author: Louis Dionne
- * License: sampler.js is placed in the public domain
+ * License: MIT (see https://github.com/ldionne/reveal-sampler/blob/master/LICENSE.md)
  */
 
 (function() {
