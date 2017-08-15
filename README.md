@@ -2,11 +2,6 @@
 > A [reveal.js][] plugin to include code samples in slides
 
 
-### Dependencies
-This plugin depends on jQuery, so make sure it is loaded before the plugin is
-loaded.
-
-
 ### Usage
 First, initialize the plugin in the `dependencies` part of the reveal.js config:
 
@@ -19,7 +14,7 @@ your reveal.js tree, but you can pick whatever you want. To include a code
 sample in a slide, use `<code>` tags as follows:
 
 ```html
-<pre><code class='sample' sample='path/to/source#sample-name'></code></pre>
+<pre><code data-sample='path/to/source#sample-name'></code></pre>
 ```
 
 The plugin will extract the sample named `sample-name` from the source file
@@ -73,6 +68,17 @@ some code not in the sample
 second part of the sample
 // end-sample
 ```
+
+You can define the snippet using line numbers as well. A range is defined as _start-end_. 
+It is line numbers not index, so the first line number is 1. Multiple ranges or line 
+numbers are possible.
+
+```html
+<pre><code data-sample='path/to/source#5-9'></code></pre>
+<pre><code data-sample='path/to/source#12,13,14'></code></pre>
+```
+
+
 
 It's that simple! To get started, you can find an example of using the plugin
 in the `example/` directory.
