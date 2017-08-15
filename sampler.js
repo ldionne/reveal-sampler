@@ -24,30 +24,63 @@
                         ( xhr.status >= 200 && xhr.status < 300 ) ||
                         ( xhr.status === 0 && xhr.responseText !== '')
                     ) {
-                       done(xhr.responseText);
+                        done(xhr.responseText);
                     }
                 }
             };
         })(xhr);
-        xhr.open( "GET", url);
+        xhr.open("GET", url);
         try {
             xhr.send();
         }
-        catch ( e ) {
+        catch (e) {
             console.log('Failed to get the file ' + url);
         }
     };
 
-    var getLines = function(code, start, length) {
+    var getLines = function(code, index, length) {
         var match = code.match(
-            new RegExp('(?:.*\n){' + start + '}((?:.*(?:\n|$)){' + length +'})')
+            new RegExp('(?:.*\n){' + index + '}((?:.*(?:\n|$)){' + length + '})')
         );
         return match[1] || '';
     };
 
+    var parseRanges = function(value) {
+        var result = [];
+        var ranges, range, start, end;
+        if (ranges = value.match(/(^|[,\s])\d+(-\d+)?/g)) {
+            for (var i = 0, c = ranges.length; i < c; i++) {
+                if (range = ranges[i].match(/(\d+)(?:-(\d+))?/)) {
+                    start = parseInt(range[1]) || 0;
+                    end = parseInt(range[2]) || start;
+                    result.push(
+                        {
+                            index: start - 1,
+                            length: end - start + 1
+                        }
+                    )
+                }
+            }
+        }
+        return result.length > 0 ? result : null;
+    };
+
+    var expandRangesToLinesIndex = function(ranges) {
+        var lines = {};
+        if (ranges instanceof Array && ranges.length > 0) {
+            for (var i = 0, c = ranges.length; i < c; i++) {
+                for (var x = 0; x < ranges[i].length; x++) {
+                    lines[ranges[i].index + x] = true;
+                }
+            }
+            return lines;
+        }
+        return null;
+    };
+
     var slug;
     var elements = document.querySelectorAll('.sample, [data-sample]');
-    for (var i = 0, c= elements.length; i < c; i++) {
+    for (var i = 0, c = elements.length; i < c; i++) {
         slug = (
             elements[i].getAttribute('data-sample') ||
             elements[i].getAttribute('sample') ||
@@ -57,18 +90,14 @@
             slug[1],
             function(element, file, snippet) {
                 return function(code) {
-                    var sample = '', lines, match, start, end;
+                    var sample = '', match, ranges, i, c;
 
                     if (snippet === undefined) {
                         sample = code;
-                    } else if (lines = snippet.match(/(^|[,\s])\d+(-\d+)?/g)) {
-                      for (i = 0, c = lines.length; i < c; i++) {
-                          if (match = lines[i].match(/(\d+)(?:-(\d+))?/)) {
-                              start = parseInt(match[1]) || 0;
-                              end = parseInt(match[2]) || start;
-                              sample += getLines(code, start - 1, end - start + 1);
-                          }
-                      }
+                    } else if (ranges = parseRanges(snippet)) {
+                        for (i = 0, c = ranges.length; i < c; i++) {
+                            sample += getLines(code, ranges[i].index, ranges[i].length);
+                        }
                     } else {
                         var sampleRegexp = new RegExp(
                             // match 'sample(sampleName)'
@@ -90,8 +119,31 @@
                         throw "Could not find sample '" + snippet + "' in file '" + file + "'.";
                     }
 
+                    var marked = expandRangesToLinesIndex(
+                        parseRanges(element.getAttribute('data-sample-mark') || '')
+                    );
+                    if (marked) {
+                        element.textContent = '';
+                        element.setAttribute('data-noescape', '');
+                        var lines = sample.split("\n");
+                        for (i = 0, c = lines.length; i < c; i++) {
+                            if (i > 0) {
+                                element.appendChild(document.createTextNode("\n"));
+
+                            }
+                            if (marked[i]) {
+                                element
+                                    .appendChild(document.createElement('mark'))
+                                    .appendChild(document.createTextNode(lines[i]))
+                            } else {
+                                element.appendChild(document.createTextNode(lines[i]));
+                            }
+                        }
+                    } else {
+                        element.textContent = sample;
+                    }
+
                     var extension = file.split('.').pop();
-                    element.textContent = sample;
                     var classString = element.getAttribute('class') || '';
                     if (!classString.match(/(^|\s)lang(uage)?-/)) {
                         element.setAttribute('class', classString + ' language-' + extension);
