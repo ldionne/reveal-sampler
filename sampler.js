@@ -38,29 +38,43 @@
         }
     };
 
+    var getLines = function(code, start, length) {
+        var match = code.match(
+            new RegExp('(?:.*\n){' + start + '}((?:.*(?:\n|$)){' + length +'})')
+        );
+        return match[1] || '';
+    };
+
     var slug;
     var elements = document.querySelectorAll('.sample');
     for (var i = 0, c= elements.length; i < c; i++) {
         slug = elements[i].getAttribute('sample').match(/([^#]+)(?:#(.+))?/);
         fetch(
             slug[1],
-            function(element, file, sampleName) {
+            function(element, file, snippet) {
                 return function(code) {
-                    var sample = null;
+                    var sample = '', lines, match, start, end;
 
-                    if (sampleName === undefined) {
+                    if (snippet === undefined) {
                         sample = code;
+                    } else if (lines = snippet.match(/(^|[,\s])\d+(-\d+)?/g)) {
+                      for (i = 0, c = lines.length; i < c; i++) {
+                          if (match = lines[i].match(/(\d+)(?:-(\d+))?/)) {
+                              start = parseInt(match[1]) || 0;
+                              end = parseInt(match[2]) || start;
+                              sample += getLines(code, start - 1, end - start + 1);
+                          }
+                      }
                     } else {
                         var sampleRegexp = new RegExp(
                             // match 'sample(sampleName)'
-                            /sample\(/.source + escapeForRegexp(sampleName) + /\)[^\n]*\n/.source +
+                            /sample\(/.source + escapeForRegexp(snippet) + /\)[^\n]*\n/.source +
                             // match anything in between
                             /^([\s\S]*?)/.source +
                             // match 'end-sample'
                             /^[^\n]*end-sample/.source, 'mg');
-                        var match = null;
                         while ((match = sampleRegexp.exec(code)) !== null) {
-                            sample = (sample || "") + match[1];
+                            sample += match[1];
                         }
                     }
 
@@ -68,8 +82,8 @@
                     // only required to insert the 'end-sample' tag.
                     sample = sample.replace(/\n$/, "");
 
-                    if (sample === null) {
-                        throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
+                    if (sample === '') {
+                        throw "Could not find sample '" + snippet + "' in file '" + file + "'.";
                     }
 
                     var extension = file.split('.').pop();
