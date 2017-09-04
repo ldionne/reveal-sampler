@@ -2,11 +2,6 @@
 > A [reveal.js][] plugin to include code samples in slides
 
 
-### Dependencies
-This plugin depends on jQuery, so make sure it is loaded before the plugin is
-loaded.
-
-
 ### Usage
 First, initialize the plugin in the `dependencies` part of the reveal.js config:
 
@@ -14,12 +9,14 @@ First, initialize the plugin in the `dependencies` part of the reveal.js config:
 { src: 'plugin/sampler.js' }
 ```
 
+#### By Name
+
 This assumes that you copied the `sampler.js` file to `plugin/sampler.js` in
 your reveal.js tree, but you can pick whatever you want. To include a code
 sample in a slide, use `<code>` tags as follows:
 
 ```html
-<pre><code class='sample' sample='path/to/source#sample-name'></code></pre>
+<pre><code data-sample='path/to/source#sample-name'></code></pre>
 ```
 
 The plugin will extract the sample named `sample-name` from the source file
@@ -73,6 +70,29 @@ some code not in the sample
 second part of the sample
 // end-sample
 ```
+
+#### By Line Numbers
+
+It is possible to define the snippet using line numbers. A range is defined 
+as _start-end_. Multiple ranges or line numbers are supported. 
+
+This approach is more fragile to changes in the source files obviously.
+
+```html
+<pre><code data-sample='path/to/source#5-9'></code></pre>
+<pre><code data-sample='path/to/source#12,13,14'></code></pre>
+```
+
+## Mark Lines
+
+Using a `data-sample-mark` you can mark lines. The context is the snippet, 
+not the original file. Ranges are support.
+
+```html
+<pre><code data-sample='path/to/source#sample-name' data-sample-mark="1,3"></code></pre>
+```
+
+### Example
 
 It's that simple! To get started, you can find an example of using the plugin
 in the `example/` directory.

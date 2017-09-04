@@ -19,6 +19,13 @@
         <!--[if lt IE 9]>
         <script src="lib/js/html5shiv.js"></script>
         <![endif]-->
+
+        <!-- zenburn clashes with the default code marker -->
+        <style type="text/css">
+            code mark {
+                background-color: #7B7B7B;
+            }
+        </style>
     </head>
 
     <body>
@@ -26,51 +33,62 @@
             <div class="slides">
                 <section>
                     <h2>C++ code</h2>
-                    <pre><code class='sample' sample='sample.cpp#main'></code></pre>
+                    <pre><code data-sample='sample.cpp#main'></code></pre>
                 </section>
 
                 <section>
                     <h2>C code</h2>
-                    <pre><code class='sample' sample='sample.c#main'></code></pre>
+                    <pre><code data-sample='sample.c#main'></code></pre>
                 </section>
 
                 <section>
                     <h2>Ruby code</h2>
-                    <pre><code class='sample' sample='sample.rb#main'></code></pre>
+                    <pre><code data-sample='sample.rb#main'></code></pre>
                 </section>
 
                 <section>
                     <h2>Many samples in the same file</h2>
-                    <pre><code class='sample' sample='many-samples.cpp#sample-1'></code></pre>
-                    <pre><code class='sample' sample='many-samples.cpp#sample-2'></code></pre>
+                    <pre><code data-sample='many-samples.cpp#sample-1'></code></pre>
+                    <pre><code data-sample='many-samples.cpp#sample-2'></code></pre>
                 </section>
 
                 <section>
                     <h2>Samples with the same tag in a file are concatenated</h2>
-                    <pre><code class='sample' sample='concatenate.cpp#main'></code></pre>
+                    <pre><code data-sample='concatenate.cpp#main'></code></pre>
                 </section>
 
                 <section>
                     <h2>Samples with language specified explicitly</h2>
                     Using class 'lang-cpp':
-                    <pre><code class='sample lang-cpp' sample='sample.misleading#main'></code></pre>
+                    <pre><code class='lang-cpp' data-sample='sample.misleading#main'></code></pre>
 
                     Using class 'language-cpp':
-                    <pre><code class='sample language-cpp' sample='sample.misleading#main'></code></pre>
+                    <pre><code class='language-cpp' data-sample='sample.misleading#main'></code></pre>
                 </section>
 
                 <section>
                     <h2>When no sample-name is specified, the whole file is included</h2>
-                    <pre><code class='sample' sample='whole_file.cpp'></code></pre>
+                    <pre><code data-sample='whole_file.cpp'></code></pre>
+                </section>
+
+                <section>
+                    <h2>Lines 5 to 9</h2>
+                    <pre><code data-sample='whole_file.cpp#5-9'></code></pre>
+                </section>
+                <section>
+                    <h2>Lines 12,13,14</h2>
+                    <pre><code data-sample='whole_file.cpp#12,13,14'></code></pre>
+                </section>
+
+                <section>
+                    <h2>Mark lines 3 and 5</h2>
+                    <pre><code data-sample='sample.cpp#main' data-sample-mark="3,5"></code></pre>
                 </section>
             </div>
         </div>
 
         <script src="lib/js/head.min.js"></script>
         <script src="js/reveal.js"></script>
-
-        <!-- Required for sampler.js! -->
-        <script src="lib/js/jquery-1.12.2.min.js"></script>
 
         <script>
             Reveal.initialize({
