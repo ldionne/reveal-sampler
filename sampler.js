@@ -11,19 +11,21 @@
  */
 
 (function() {
+    // Escape a string so it can be used to match in a regular expression, even
+    // if it contains characters that are special for regular expressions.
     var escapeForRegexp = function(s) {
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     };
 
+    // Fetches a file at the given URL, and calls the `done` callback with the
+    // contents of the file as a string.
     var fetch = function(url, done) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = (function(xhr) {
             return function() {
                 if (xhr.readyState === 4) {
-                    if (
-                        ( xhr.status >= 200 && xhr.status < 300 ) ||
-                        ( xhr.status === 0 && xhr.responseText !== '')
-                    ) {
+                    if ((xhr.status >= 200 && xhr.status < 300) ||
+                        (xhr.status === 0 && xhr.responseText !== '')) {
                         done(xhr.responseText);
                     }
                 }
@@ -38,13 +40,19 @@
         }
     };
 
-    var getLines = function(code, index, length) {
-        var match = code.match(
+    // Given a string, returns a sub-string starting at the `index`th line,
+    // and stopping at the `index + length`th line.
+    var getLines = function(s, index, length) {
+        var match = s.match(
             new RegExp('(?:.*\n){' + index + '}((?:.*(?:\n|$)){' + length + '})')
         );
         return match[1] || '';
     };
 
+    // Parses a string representing a single line number, a (start-end) range,
+    // or a comma-separated list thereof, and returns a list of ranges
+    // representing the union of those ranges. An individual line is
+    // considered a single-line range for that purpose.
     var parseRanges = function(value) {
         var result = [];
         var ranges, range, start, end;
@@ -65,6 +73,8 @@
         return result.length > 0 ? result : null;
     };
 
+    // Given ranges (as returned by `parseRanges`), returns a list of all the
+    // individual lines contained in that set of ranges.
     var expandRangesToLinesIndex = function(ranges) {
         var lines = {};
         if (ranges instanceof Array && ranges.length > 0) {
