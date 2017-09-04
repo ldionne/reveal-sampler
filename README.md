@@ -9,11 +9,9 @@ First, initialize the plugin in the `dependencies` part of the reveal.js config:
 { src: 'plugin/sampler.js' }
 ```
 
-#### By Name
-
 This assumes that you copied the `sampler.js` file to `plugin/sampler.js` in
-your reveal.js tree, but you can pick whatever you want. To include a code
-sample in a slide, use `<code>` tags as follows:
+your reveal.js tree, but you can obviously pick whatever path you want. To
+include a code sample in a slide, use `<code>` tags as follows:
 
 ```html
 <pre><code data-sample='path/to/source#sample-name'></code></pre>
@@ -21,14 +19,26 @@ sample in a slide, use `<code>` tags as follows:
 
 The plugin will extract the sample named `sample-name` from the source file
 whose path is given, and write it inside the `<code>` tag. If no `sample-name`
-is given, the whole file is included. The plugin will also add the `language-xxx`
-class to the `<code>` tag, where `xxx` is the extension of the source file, so
-that code highlighting triggers properly if set up. This usually works out of
-the box, because [highlight.js][] can recognize the extensions associated to
-most languages. If you need to explicitly set the language to use (e.g. because
-the file extension is misleading), set the `language-xxx` class yourself on the
-`<code>` tag and the plugin will leave it alone. To define a sample inside a
-source file, use the following syntax to delimit code samples:
+is given, the whole file is included. It is also possible to use line numbers
+instead of a sample name to delimit a code snippet. The basic syntax is
+`path/to/file#start-end`, but multiple ranges or individual line numbers
+are supported too:
+
+```html
+<pre><code data-sample='path/to/source#5-9'></code></pre>
+<pre><code data-sample='path/to/source#5-9,14-18'></code></pre>
+<pre><code data-sample='path/to/source#5,7,9'></code></pre>
+<pre><code data-sample='path/to/source#5-9,14,15'></code></pre>
+```
+
+The plugin will also add the `language-xxx` class to the `<code>` tag, where
+`xxx` is the extension of the source file, so that code highlighting triggers
+properly if set up. This usually works out of the box, because [highlight.js][]
+can recognize the extensions associated to most languages. If you need to
+explicitly set the language to use (e.g. because the file extension is
+misleading), set the `language-xxx` class yourself on the `<code>` tag and
+the plugin will leave it alone. To define a named sample inside a source file,
+use the following syntax:
 
 ```
 ...
@@ -71,26 +81,17 @@ second part of the sample
 // end-sample
 ```
 
-#### By Line Numbers
-
-It is possible to define the snippet using line numbers. A range is defined 
-as _start-end_. Multiple ranges or line numbers are supported. 
-
-This approach is more fragile to changes in the source files obviously.
-
-```html
-<pre><code data-sample='path/to/source#5-9'></code></pre>
-<pre><code data-sample='path/to/source#12,13,14'></code></pre>
-```
-
-## Mark Lines
-
-Using a `data-sample-mark` you can mark lines. The context is the snippet, 
-not the original file. Ranges are support.
+### Marking lines in a sample
+Specific lines or line ranges can be marked in a sample. To do this, use the
+`data-sample-mark` attribute as follows:
 
 ```html
 <pre><code data-sample='path/to/source#sample-name' data-sample-mark="1,3"></code></pre>
 ```
+
+The line numbers specified in `data-sample-mark` are relative to the snippet
+itself, not to the file from which the snippet was extracted. Also, line
+ranges are supported, just like for extracting snippets from a file.
 
 ### Example
 
