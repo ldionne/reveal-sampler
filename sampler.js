@@ -88,21 +88,21 @@
         return null;
     };
 
-    var slug;
     var elements = document.querySelectorAll('[data-sample]');
-    for (var i = 0, c = elements.length; i < c; i++) {
-        slug = elements[i].getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
+    for (var i = 0; i < elements.length; i++) {
+        var slug = elements[i].getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
+
         fetch(
             slug[1],
             function(element, file, snippet) {
                 return function(code) {
-                    var sample = '', match, ranges, i, c;
+                    var sample = '', match, ranges;
 
                     if (snippet === undefined) {
                         sample = code;
                     } else if (ranges = parseRanges(snippet)) {
-                        for (i = 0, c = ranges.length; i < c; i++) {
-                            sample += getLines(code, ranges[i].index, ranges[i].length);
+                        for (var j = 0; j < ranges.length; j++) {
+                            sample += getLines(code, ranges[j].index, ranges[j].length);
                         }
                     } else {
                         var sampleRegexp = new RegExp(
@@ -132,17 +132,15 @@
                         element.textContent = '';
                         element.setAttribute('data-noescape', '');
                         var lines = sample.split("\n");
-                        for (i = 0, c = lines.length; i < c; i++) {
-                            if (i > 0) {
+                        for (var j = 0; j < lines.length; j++) {
+                            if (j > 0) {
                                 element.appendChild(document.createTextNode("\n"));
-
                             }
-                            if (marked[i]) {
-                                element
-                                    .appendChild(document.createElement('mark'))
-                                    .appendChild(document.createTextNode(lines[i]))
+                            if (marked[j]) {
+                                element.appendChild(document.createElement('mark'))
+                                       .appendChild(document.createTextNode(lines[j]))
                             } else {
-                                element.appendChild(document.createTextNode(lines[i]));
+                                element.appendChild(document.createTextNode(lines[j]));
                             }
                         }
                     } else {
