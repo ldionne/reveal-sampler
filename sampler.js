@@ -89,74 +89,70 @@
     };
 
     var elements = document.querySelectorAll('[data-sample]');
-    for (var i = 0; i < elements.length; i++) {
-        var slug = elements[i].getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
+    elements.forEach(function(element) {
+        var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
+        var file = slug[1], snippet = slug[2];
 
-        fetch(
-            slug[1],
-            function(element, file, snippet) {
-                return function(code) {
-                    var sample = '', match, ranges;
+        fetch(file, function(code) {
+            var sample = '', match, ranges;
 
-                    if (snippet === undefined) {
-                        sample = code;
-                    } else if (ranges = parseRanges(snippet)) {
-                        for (var j = 0; j < ranges.length; j++) {
-                            sample += getLines(code, ranges[j].index, ranges[j].length);
-                        }
+            if (snippet === undefined) {
+                sample = code;
+            } else if (ranges = parseRanges(snippet)) {
+                ranges.forEach(function(range) {
+                    sample += getLines(code, range.index, range.length);
+                });
+            } else {
+                var sampleRegexp = new RegExp(
+                    // match 'sample(sampleName)'
+                    /sample\(/.source + escapeForRegexp(snippet) + /\)[^\n]*\n/.source +
+                    // match anything in between
+                    /^([\s\S]*?)/.source +
+                    // match 'end-sample'
+                    /^[^\n]*end-sample/.source, 'mg');
+                while ((match = sampleRegexp.exec(code)) !== null) {
+                    sample += match[1];
+                }
+            }
+
+            // Strip trailing newline in the sample (if any), since that is
+            // only required to insert the 'end-sample' tag.
+            sample = sample.replace(/\n$/, "");
+
+            if (sample === '') {
+                throw "Could not find sample '" + snippet + "' in file '" + file + "'.";
+            }
+
+            var marked = expandRangesToLinesIndex(
+                parseRanges(element.getAttribute('data-sample-mark') || '')
+            );
+            if (marked) {
+                element.textContent = '';
+                element.setAttribute('data-noescape', '');
+                var lines = sample.split("\n");
+                for (var j = 0; j < lines.length; j++) {
+                    if (j > 0) {
+                        element.appendChild(document.createTextNode("\n"));
+                    }
+                    if (marked[j]) {
+                        element.appendChild(document.createElement('mark'))
+                               .appendChild(document.createTextNode(lines[j]))
                     } else {
-                        var sampleRegexp = new RegExp(
-                            // match 'sample(sampleName)'
-                            /sample\(/.source + escapeForRegexp(snippet) + /\)[^\n]*\n/.source +
-                            // match anything in between
-                            /^([\s\S]*?)/.source +
-                            // match 'end-sample'
-                            /^[^\n]*end-sample/.source, 'mg');
-                        while ((match = sampleRegexp.exec(code)) !== null) {
-                            sample += match[1];
-                        }
-                    }
-
-                    // Strip trailing newline in the sample (if any), since that is
-                    // only required to insert the 'end-sample' tag.
-                    sample = sample.replace(/\n$/, "");
-
-                    if (sample === '') {
-                        throw "Could not find sample '" + snippet + "' in file '" + file + "'.";
-                    }
-
-                    var marked = expandRangesToLinesIndex(
-                        parseRanges(element.getAttribute('data-sample-mark') || '')
-                    );
-                    if (marked) {
-                        element.textContent = '';
-                        element.setAttribute('data-noescape', '');
-                        var lines = sample.split("\n");
-                        for (var j = 0; j < lines.length; j++) {
-                            if (j > 0) {
-                                element.appendChild(document.createTextNode("\n"));
-                            }
-                            if (marked[j]) {
-                                element.appendChild(document.createElement('mark'))
-                                       .appendChild(document.createTextNode(lines[j]))
-                            } else {
-                                element.appendChild(document.createTextNode(lines[j]));
-                            }
-                        }
-                    } else {
-                        element.textContent = sample;
-                    }
-
-                    var extension = file.split('.').pop();
-                    var classString = element.getAttribute('class') || '';
-                    if (!classString.match(/(^|\s)lang(uage)?-/)) {
-                        element.setAttribute('class', classString + ' language-' + extension);
-                    }
-                    if (typeof hljs !== 'undefined') {
-                        hljs.highlightBlock(element);
+                        element.appendChild(document.createTextNode(lines[j]));
                     }
                 }
-            }(elements[i], slug[1], slug[2])
-        );
-    }
+            } else {
+                element.textContent = sample;
+            }
+
+            var extension = file.split('.').pop();
+            var classString = element.getAttribute('class') || '';
+            if (!classString.match(/(^|\s)lang(uage)?-/)) {
+                element.setAttribute('class', classString + ' language-' + extension);
+            }
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightBlock(element);
+            }
+        });
+    });
 })();
