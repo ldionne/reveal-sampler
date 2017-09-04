@@ -88,41 +88,66 @@
         return null;
     };
 
-    var elements = document.querySelectorAll('[data-sample]');
-    elements.forEach(function(element) {
-        var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
-        var file = slug[1], snippet = slug[2];
+    // Given the right side of a `#` in `path/to/file#selector`, returns a
+    // function that extracts the code snippet represented by `selector`
+    // from a string representing a source file.
+    var getSnippetExtractor = function(selector) {
+        var ranges = null, extractor = null;
 
-        fetch(file, function(code) {
-            var sample = '', match, ranges;
+        // By default, match the whole file.
+        if (selector === undefined) {
+            extractor = function(code) { return code; }
 
-            if (snippet === undefined) {
-                sample = code;
-            } else if (ranges = parseRanges(snippet)) {
-                ranges.forEach(function(range) {
-                    sample += getLines(code, range.index, range.length);
-                });
-            } else {
-                var sampleRegexp = new RegExp(
+        // Selector for line numbers and ranges thereof.
+        } else if (ranges = parseRanges(selector)) {
+            extractor = function(code) {
+                return ranges.reduce(function(sample, range) {
+                    return sample + getLines(code, range.index, range.length);
+                }, '');
+            };
+
+        // Selector for named code samples.
+        } else {
+            extractor = function(code) {
+                var namedSampleRegexp = new RegExp(
                     // match 'sample(sampleName)'
-                    /sample\(/.source + escapeForRegexp(snippet) + /\)[^\n]*\n/.source +
+                    /sample\(/.source + escapeForRegexp(selector) + /\)[^\n]*\n/.source +
                     // match anything in between
                     /^([\s\S]*?)/.source +
                     // match 'end-sample'
                     /^[^\n]*end-sample/.source, 'mg');
-                while ((match = sampleRegexp.exec(code)) !== null) {
+                var sample = '', match = null;
+                while ((match = namedSampleRegexp.exec(code)) !== null) {
                     sample += match[1];
                 }
-            }
+                return sample;
+            };
+        }
 
+        var postProcess = function(code) {
             // Strip trailing newline in the sample (if any), since that is
             // only required to insert the 'end-sample' tag.
-            sample = sample.replace(/\n$/, "");
+            return code.replace(/\n$/, "");
+        };
 
+        return function(code) { return postProcess(extractor(code)); };
+    };
+
+    var elements = document.querySelectorAll('[data-sample]');
+    elements.forEach(function(element) {
+        var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
+        var file = slug[1];
+        var selector = slug[2];
+        var extractor = getSnippetExtractor(selector);
+
+        fetch(file, function(code) {
+            // Extract the sample from the source file
+            var sample = extractor(code);
             if (sample === '') {
-                throw "Could not find sample '" + snippet + "' in file '" + file + "'.";
+                throw "Could not find sample '" + selector + "' in file '" + file + "'.";
             }
 
+            // Mark lines in the sample, if requested.
             var marked = expandRangesToLinesIndex(
                 parseRanges(element.getAttribute('data-sample-mark') || '')
             );
@@ -145,6 +170,7 @@
                 element.textContent = sample;
             }
 
+            // Add the right `language-xyz` class to the code block, if required.
             var extension = file.split('.').pop();
             var classString = element.getAttribute('class') || '';
             if (!classString.match(/(^|\s)lang(uage)?-/)) {
