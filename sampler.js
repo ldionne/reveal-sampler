@@ -89,13 +89,9 @@
     };
 
     var slug;
-    var elements = document.querySelectorAll('.sample, [data-sample]');
+    var elements = document.querySelectorAll('[data-sample]');
     for (var i = 0, c = elements.length; i < c; i++) {
-        slug = (
-            elements[i].getAttribute('data-sample') ||
-            elements[i].getAttribute('sample') ||
-            ''
-        ).match(/([^#]+)(?:#(.+))?/);
+        slug = elements[i].getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
         fetch(
             slug[1],
             function(element, file, snippet) {
