@@ -37,46 +37,45 @@ properly if set up. This usually works out of the box, because [highlight.js][]
 can recognize the extensions associated to most languages. If you need to
 explicitly set the language to use (e.g. because the file extension is
 misleading), set the `language-xxx` class yourself on the `<code>` tag and
-the plugin will leave it alone. To define a named sample inside a source file,
-use the following syntax:
+the plugin will leave it alone.
+
+#### Annotating source files
+
+To define a named sample inside a source file, use the following syntax:
 
 ```
-...
-
 sample(sample-name)
 code-inside-the-sample
 end-sample
-
-...
 ```
 
-`sampler.js` will parse the source file, and anything between the `sample(...)`
+`sampler.js` will parse the source file, and anything between the `sample(sample-name)`
 and the `end-sample` tags will be taken to be a code sample named `sample-name`.
-Including that code sample in a slide will cause all the code between the two
-special tags to be included in that slide. However, anything on the same line
-as one of the special tags will not be taken as part of the sample, which
-allows commenting the tags:
+Note that anything on the same line as one of the special tags will not be taken
+as part of the sample, which is what allows this plugin to be language-agnostic,
+by commenting the tags in your source code. For example:
 
 ```c++
-// sample(sample-name)
-...
+// sample(main)
+int main() {
+    std::cout << "this is C++ code" << std::endl;
+}
 // end-sample
 ```
 
 Multiple samples can appear in the same source file, as long as they have
 different names. If many samples have the same name, they will be considered
-as a single sample and concatenated together, which can be useful to avoid
-showing unimportant bits of code in a slide. For example, the following code
-will create a single sample with name 'sample-name':
+as a single sample and concatenated together. For example, the following code
+will create a single sample with name 'foo':
 
 ```c++
-// sample(sample-name)
+// sample(foo)
 first part of the sample
 // end-sample
 
 some code not in the sample
 
-// sample(sample-name)
+// sample(foo)
 second part of the sample
 // end-sample
 ```
