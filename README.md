@@ -39,7 +39,7 @@ explicitly set the language to use (e.g. because the file extension is
 misleading), set the `language-xxx` class yourself on the `<code>` tag and
 the plugin will leave it alone.
 
-#### Annotating source files
+### Annotating source files
 
 To define a named sample inside a source file, use the following syntax:
 
