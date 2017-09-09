@@ -80,6 +80,18 @@ second part of the sample
 // end-sample
 ```
 
+Within a sample, any line containing `skip-sample` will be skipped, which
+allows leaving implementation details out of slides:
+
+```c++
+// sample(foo)
+class Foo {
+    void implementation_detail(); // skip-sample
+    void hello() { std::cout << "hello!" << std::endl; }
+};
+// end-sample
+```
+
 ### Marking lines in a sample
 Specific lines or line ranges can be marked in a sample. To do this, use the
 `data-sample-mark` attribute as follows:

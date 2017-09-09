@@ -127,7 +127,15 @@
         var postProcess = function(code) {
             // Strip trailing newline in the sample (if any), since that is
             // only required to insert the 'end-sample' tag.
-            return code.replace(/\n$/, "");
+            code = code.replace(/\n$/, "");
+
+            // Skip lines that contain the `skip-sample` tag.
+            var lines = code.split("\n");
+            lines = lines.filter(function(line) {
+                return line.indexOf('skip-sample') == -1;
+            });
+
+            return lines.join('\n');
         };
 
         return function(code) { return postProcess(extractor(code)); };
