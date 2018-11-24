@@ -124,8 +124,20 @@ the option `sampler.removeIndentation`. The default value is `false`.
 }
 ```
 
+### Fetcher URL
+Defining the fetcher URL will prefix all snippet requests with it. 
 
+```js
+{ 
+    sampler : {
+        fetcherURL: 'task.php?file='
+    } 
+}
+```
 
+If you're trying to load a language that your webserver understands (for example PHP) you
+can create a proxy script that passes the source of the file trough. Be careful to 
+limit the script to the source files you would like to deliver.
 
 ### Example
 
