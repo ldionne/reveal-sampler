@@ -141,6 +141,33 @@
         return function(code) { return postProcess(extractor(code)); };
     };
 
+    // To remove the indentation find the shortest leading whitespace sequence
+    // and remove it from all lines.
+    var removeIndentationFromLines = function(code) {
+        var indent, indentPattern;
+        var indentMatch = code.match(/^[ \t]+/mg);
+        if (indentMatch) {
+            indent = indentMatch.reduce(
+                function(previousValue, currentValue) {
+                    if (previousValue.length < currentValue.length) {
+                        return previousValue;
+                    }
+                    return currentValue;
+                }
+            );
+            indentPattern = new RegExp('^' + indent + '', 'mg');
+            return code.replace(indentPattern, '');
+        }
+        return code;
+    };
+
+    // Read configuration options
+    var config = Reveal.getConfig() || {};
+    config.sampler = config.sampler || {};
+    var options = {
+        removeIndentation: !!config.sampler.removeIndentation
+    };
+
     var elements = document.querySelectorAll('[data-sample]');
     elements.forEach(function(element) {
         var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
@@ -153,6 +180,22 @@
             var sample = extractor(code);
             if (sample === '') {
                 throw "Could not find sample '" + selector + "' in file '" + file + "'.";
+            }
+
+            // Read indentation behaviour defined by attribute or global option
+            var removeIndentation;
+            switch (element.getAttribute('data-sample-indent')) {
+                case 'keep' :
+                    removeIndentation = false;
+                    break;
+                case 'remove':
+                    removeIndentation = true;
+                    break;
+                default :
+                    removeIndentation = options.removeIndentation;
+            }
+            if (removeIndentation) {
+              sample = removeIndentationFromLines(sample);
             }
 
             // Mark lines in the sample, if requested.
