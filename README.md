@@ -114,7 +114,7 @@ attribute `data-sample-indent`.
 ```
 
 You can change the default behaviour (snippets without the attribute) using
-an the option `sampler.removeIndentation`.
+an the option `sampler.removeIndentation`. The default value is `false`.
 
 ```js
 { 
