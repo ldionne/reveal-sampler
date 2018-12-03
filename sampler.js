@@ -165,14 +165,14 @@
     var config = Reveal.getConfig() || {};
     config.sampler = config.sampler || {};
     var options = {
-        fetcherURL: config.sampler.fetcherURL || '',
+        proxyURL: config.sampler.proxyURL || '',
         removeIndentation: !!config.sampler.removeIndentation
     };
 
     var elements = document.querySelectorAll('[data-sample]');
     elements.forEach(function(element) {
         var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
-        var file = options.fetcherURL + slug[1];
+        var file = options.proxyURL + slug[1];
         var selector = slug[2];
         var extractor = getSnippetExtractor(selector);
 

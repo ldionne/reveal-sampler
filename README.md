@@ -124,13 +124,14 @@ the option `sampler.removeIndentation`. The default value is `false`.
 }
 ```
 
-### Fetcher URL
-Defining the fetcher URL will prefix all snippet requests with it. 
+### Proxy URL
+Defining the proxy URL will prefix all snippet requests with it. This allows you to use a script to access the
+snippet files.
 
 ```js
 { 
     sampler : {
-        fetcherURL: 'task.php?file='
+        proxyURL: 'task.php?file='
     } 
 }
 ```
