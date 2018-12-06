@@ -104,6 +104,29 @@ The line numbers specified in `data-sample-mark` are relative to the snippet
 itself, not to the file from which the snippet was extracted. Also, line
 ranges are supported, just like for extracting snippets from a file.
 
+### Remove indentation
+If all lines of the sample have an overall indentation you can remove it using the 
+attribute `data-sample-indent`.
+
+```html
+<pre><code data-sample='path/to/source#sample-name' data-sample-indent="remove"></code></pre>
+<pre><code data-sample='path/to/source#sample-name' data-sample-indent="keep"></code></pre>
+```
+
+You can change the default behaviour (snippets without the attribute) using
+the option `sampler.removeIndentation`. The default value is `false`.
+
+```js
+{ 
+    sampler : {
+        removeIndentation: true
+    } 
+}
+```
+
+
+
+
 ### Example
 
 It's that simple! To get started, you can find an example of using the plugin
