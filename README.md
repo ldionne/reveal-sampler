@@ -124,8 +124,21 @@ the option `sampler.removeIndentation`. The default value is `false`.
 }
 ```
 
+### Proxy URL
+Defining the proxy URL will prefix all snippet requests with it. This allows you to use a script to access the
+snippet files.
 
+```js
+{ 
+    sampler : {
+        proxyURL: 'task.php?file='
+    } 
+}
+```
 
+If you're trying to load a language that your webserver understands (for example PHP) you
+can create a proxy script that passes the source of the file trough. Be careful to 
+limit the script to the source files you would like to deliver.
 
 ### Example
 
