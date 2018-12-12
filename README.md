@@ -92,6 +92,22 @@ class Foo {
 // end-sample
 ```
 
+Lines containing a comment `mark-sample` will be marked and the comment will be removed.
+The plugin recognizes the following strings as mark comments:
+ 
+ * `// mark-sample`
+ * `# mark-sample`
+ * `/* mark-sample */`
+ * `<!-- mark-sample -->` 
+
+```c++
+// sample(foo)
+class Foo {
+    void hello() { std::cout << "hello!" << std::endl; } // mark-sample
+};
+// end-sample
+```
+
 ### Marking lines in a sample
 Specific lines or line ranges can be marked in a sample. To do this, use the
 `data-sample-mark` attribute as follows:
@@ -103,6 +119,27 @@ Specific lines or line ranges can be marked in a sample. To do this, use the
 The line numbers specified in `data-sample-mark` are relative to the snippet
 itself, not to the file from which the snippet was extracted. Also, line
 ranges are supported, just like for extracting snippets from a file.
+
+### Line numbers
+You can let the plugin add line numbers to the sample. `true` adds line numbers starting with 1, a number
+adds line number starting with it and `original` copies the line numbers from the source file.
+
+```html
+<pre><code data-sample='path/to/source#sample-name' data-sample-line-numbers="true"></code></pre>
+<pre><code data-sample='path/to/source#sample-name' data-sample-line-numbers="42"></code></pre>
+<pre><code data-sample='path/to/source#sample-name' data-sample-line-numbers="original"></code></pre>
+```
+
+The global option `sampler.lineNumbers` allows for `true`, `false` and `'original'` it controls the
+line numbers on code blocks without the `data-sample-line-numbers`. The default value is `false` (no line numbers).
+
+```js
+{ 
+    sampler : {
+        lineNumbers: true
+    } 
+}
+```
 
 ### Remove indentation
 If all lines of the sample have an overall indentation you can remove it using the 
@@ -123,6 +160,37 @@ the option `sampler.removeIndentation`. The default value is `false`.
     } 
 }
 ```
+
+### Skip lines 
+To skip lines add a the attribute `data-sample-skip`. 
+
+```html
+<pre><code data-sample='path/to/source' data-sample-skip="delimiter"></code></pre>
+<pre><code data-sample='path/to/source' data-sample-skip="1-3,4"></code></pre>
+<pre><code data-sample='path/to/source' data-sample-skip="delimiter,12"></code></pre>
+```
+
+#### Skip: delimiter, delimiters
+
+`delimiter` or `delimiters` will skip lines that mark the start/end of a sample. Add this to the option to skip these 
+lines for whole file or line number samples. This will not affect named samples (they never include that lines).
+
+You can set this globally using the option `sampler.skip`.
+
+```js
+{ 
+    sampler : {
+        skip: ['delimiter']
+    } 
+}
+```
+
+#### Skip: line ranges
+
+The line numbers and ranges specified in `data-sample-skip` are relative to the snippet
+itself, not to the file from which the snippet was extracted.
+
+Delimiter lines will count if included, only. 
 
 ### Proxy URL
 Defining the proxy URL will prefix all snippet requests with it. This allows you to use a script to access the

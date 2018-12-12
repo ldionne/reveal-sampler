@@ -13,16 +13,45 @@
 (function() {
 
     /**
+     *
+     * @param {string} value
+     * @param {number} targetLength
+     * @param {string} [padString= ]
+     * @returns {*}
+     */
+    var stringPadStart = function(value, targetLength, padString) {
+        padString = String(typeof padString !== 'undefined' ? padString : ' ');
+        if (value.padStart instanceof Function) {
+            return value.padStart(targetLength, padString);
+        } else {
+            targetLength = targetLength >> 0;
+            value = String(value);
+            if (value.length >= targetLength) {
+                return value;
+            } else {
+                targetLength = targetLength - value.length;
+                if (targetLength > padString.length) {
+                    padString += padString.repeat(targetLength / padString.length);
+                }
+                return padString.slice(0, targetLength) + value;
+            }
+        }
+    };
+
+    /**
      * @param {Number} lineNumber
      * @param {string} text
+     * @param {string|null} [tokenType]
      * @constructor
      *
      * @property {Number} lineNumber
      * @property {string} text
+     * @property {string|null} [tokenType]
      */
-    var SampleLine = function(lineNumber, text) {
+    var SampleLine = function(lineNumber, text, tokenType) {
         this.lineNumber = lineNumber;
         this.text = text || '';
+        this.tokenType = tokenType || null;
     };
 
     /**
@@ -32,6 +61,7 @@
      * @constructor
      */
     var SampleFile = function(content) {
+        var lines = content.split(/\r?\n/);
         var line, currentSnippets = [], token, i, c, k;
         var parseLine = function(line) {
             var match, token_definition;
@@ -47,12 +77,12 @@
             }
             return false;
         };
-        this._lines = content.split(/\r?\n/);
+        this._lines = [];
         this._samples = {};
-        for (i = 0, c = this._lines.length; i < c; i++) {
-            line = this._lines[i];
-            token = parseLine(line);
+        for (i = 0, c = lines.length; i < c; i++) {
+            token = parseLine(lines[i]);
             if (token) {
+                this._lines.push(new SampleLine(i + 1, lines[i], token.type));
                 switch (token.type) {
                     case SampleFile.TOKEN_START_NAMED :
                         currentSnippets.push(token.name);
@@ -71,6 +101,7 @@
                         break;
                 }
             } else {
+                this._lines.push(line = new SampleLine(i + 1, lines[i]));
                 currentSnippets
                     .filter(
                         function(value, index, self) { return self.indexOf(value) === index; }
@@ -81,7 +112,7 @@
                                 if (!this._samples.hasOwnProperty(name)) {
                                     this._samples[name] = [];
                                 }
-                                this._samples[name].push(new SampleLine(index + 1, line));
+                                this._samples[name].push(line);
                             }.bind(this);
                         }.bind(this)(i, line)
                     )
@@ -133,19 +164,7 @@
      * @returns {SampleLine[]}
      */
     SampleFile.prototype.getLines = function(start, length) {
-        var lines = [];
-        var maximum = this._lines.length - 1;
-        var end;
-        if (maximum < 0) {
-            return null;
-        }
-        start = (start < 0) ? maximum + start : start;
-        end = (length < 0) ? maximum + length : start + length - 1;
-
-        for (var i = start; i <= end; i++) {
-            lines.push(new SampleLine(i + 1, this._lines[i]));
-        }
-        return lines;
+        return this._lines.slice(start, start + length);
     };
 
     /**
@@ -272,6 +291,11 @@
         return sample;
     };
 
+    /**
+     * Parse the selector in a list of range objects
+     * @param selector
+     * @returns {({type, start, length}[]|{type, name}[])}
+     */
     Sample.parseSelector = function(selector) {
         var ranges = selector.split(",") || [];
         var range, start, end;
@@ -337,7 +361,7 @@
                 function(line) {
                     return (
                         line instanceof SampleLine &&
-                        line.text.indexOf('skip-sample') === -1
+                        !line.text.match(/\bskip-sample\b/)
                     );
                 }
             )
@@ -345,34 +369,75 @@
     };
 
     /**
+     * @param {bool} skipDelimiters
+     * @param {number[]} skipLines - skip lines by index
+     * @returns {SampleLine[]}
+     */
+    Sample.prototype.getLines = function(skipDelimiters, skipLines) {
+        var lines = this._lines;
+        if (skipDelimiters) {
+            lines = lines.filter(
+                function (line) {
+                    // skip delimiter lines if option is set
+                    return !(skipDelimiters && line.tokenType !== null);
+                }
+            )
+        }
+        if (skipLines) {
+            lines = lines.filter(
+                function (line, index) {
+                    // skip lines defined by index
+                    return !skipLines[index];
+                }
+            )
+        }
+        return lines;
+    };
+
+    /**
      * @param {HTMLElement} parentNode
-     * @param {{removeIndentation: boolean, marked: string, lineNumbers}} options
+     * @param {{removeIndentation: boolean, marked: string, lineNumbers, skip: {}}} options
      */
     Sample.prototype.appendTo = function(parentNode, options) {
-        var line, lineNode, previousLineNode = null;
+        var line, lineNode, previousLineNode, lineText = null;
+        var markedLinePattern = /(\s*(\/\/|#)\s*mark-sample\s*$)|(\s*\/\*\s*mark-sample\s*\*\/(\s*$)?)|(\s*<!--\s*mark-sample\s*-->(\s*$)?)/;
         var document = parentNode.ownerDocument;
         var indentationOffset = (options.removeIndentation) ? this.getIndentationLength() : 0;
         var marked = Sample.parseSelectorToLineIndex(options.marked || '') || {};
-        var lineNumberStart =  parseInt(options.lineNumbers) || 0;
+        var lineNumberStart =  parseInt(options.lineNumbers) || 0, lineNumberSize;
+        var lines = this.getLines(options.skip.delimiters, options.skip.lines);
+        if (lines.length < 1) {
+            return;
+        }
         if (options.lineNumbers === true || options.lineNumbers === 'true' || options.lineNumbers === 'yes') {
             lineNumberStart = 1;
         }
+        if (options.lineNumbers === 'original') {
+            lineNumberSize = lines[lines.length - 1].lineNumber.toString().length;
+        } else {
+            lineNumberSize = (lineNumberStart + this._lines.length).toString().length;
+        }
         parentNode.setAttribute('data-noescape', '');
-        for (var i = 0, c = this._lines.length; i < c; i++) {
-            line = this._lines[i];
+        for (var i = 0, c = lines.length; i < c; i++) {
+            line = lines[i];
+            lineText = line.text.substr(indentationOffset);
             lineNode = parentNode.appendChild(document.createElement('span'));
             lineNode.setAttribute('class', 'line');
             if (options.lineNumbers === 'original') {
-                lineNode.setAttribute('data-line-number', line.lineNumber);
+                lineNode.setAttribute('data-line-number', stringPadStart(line.lineNumber.toString(), lineNumberSize));
             } else if (lineNumberStart > 0) {
-                lineNode.setAttribute('data-line-number', lineNumberStart + i);
+                lineNode.setAttribute('data-line-number', stringPadStart((lineNumberStart + i).toString(), lineNumberSize));
             }
-            if (marked[i]) {
+            if (lineText.match(markedLinePattern)) {
                 lineNode
                     .appendChild(document.createElement('mark'))
-                    .appendChild(document.createTextNode(line.text.substr(indentationOffset)));
+                    .appendChild(document.createTextNode(lineText.replace(markedLinePattern, '')));
+            } else if (marked[i]) {
+                lineNode
+                    .appendChild(document.createElement('mark'))
+                    .appendChild(document.createTextNode(lineText));
             } else {
-                lineNode.appendChild(document.createTextNode(line.text.substr(indentationOffset)));
+                lineNode.appendChild(document.createTextNode(lineText));
             }
             if (previousLineNode) {
                 previousLineNode.appendChild(document.createTextNode('\n'));
@@ -406,9 +471,21 @@
     var options = {
         proxyURL: config.sampler.proxyURL || '',
         removeIndentation: !!config.sampler.removeIndentation,
+        skip: config.sampler.skip instanceof Array
+            ? config.sampler.skip : (config.sampler.skip || '').split(/[,\s]+/),
         lineNumbers: [true, 'original'].indexOf(config.sampler.lineNumbers) !== -1
             ? config.sampler.lineNumbers : false
     };
+
+    // add some CSS to make the line numbers visible
+    var style =
+        "[data-sample] [data-line-number]:before {\n" +
+        "   content: attr(data-line-number) ': ';\n" +
+        "}";
+    var styleNode = document.createElement('style');
+    styleNode.setAttribute('type', 'text/css');
+    styleNode.appendChild(document.createTextNode(style));
+    document.head.appendChild(styleNode);
 
     var files = new SampleFiles();
     var elements = document.querySelectorAll('[data-sample]');
@@ -429,6 +506,7 @@
                     var attributes = {
                         mark : element.getAttribute('data-sample-mark') || '',
                         indent: element.getAttribute('data-sample-indent'),
+                        skip: (element.getAttribute('data-sample-skip') || options.skip.join(',')),
                         lineNumbers: element.getAttribute('data-sample-line-numbers')
                     };
 
@@ -437,6 +515,13 @@
                         {
                             // marked lines selector
                             marked: attributes.mark,
+                            // skip lines
+                            skip: {
+                                // (sample start/end) delimiter lines)
+                                delimiters: attributes.skip.match(/\bdelimiters?\b/),
+                                // expand ranges to line index array
+                                lines: Sample.parseSelectorToLineIndex(attributes.skip)
+                            },
                             // indentation behaviour defined by attribute or global option
                             removeIndentation:
                                 attributes.indent === 'remove' ||

@@ -25,9 +25,6 @@
             code mark {
                 background-color: #7B7B7B;
             }
-            code [data-line-number]:before {
-                content: attr(data-line-number) ': ';
-            }
         </style>
     </head>
 
@@ -77,7 +74,7 @@
 
                 <section>
                     <h2>When no sample-name is specified, the whole file is included</h2>
-                    <pre><code data-sample='whole_file.cpp'></code></pre>
+                    <pre><code data-sample='whole_file.cpp' data-sample-skip="delimiter"></code></pre>
                 </section>
 
                 <section>
@@ -88,6 +85,11 @@
                 <section>
                     <h2>Lines 12,13,14</h2>
                     <pre><code data-sample='whole_file.cpp#12,13,14'></code></pre>
+                </section>
+
+                <section>
+                    <h2>Mark some lines in the file</h2>
+                    <pre><code data-sample='mark-sample.cpp#main'></code></pre>
                 </section>
 
                 <section>
@@ -106,6 +108,14 @@
                 </section>
 
                 <section>
+                    <h2>Skip line by index</h2>
+                    <h4>fetch 7-9</h4>
+                    <pre><code data-sample='whole_file.cpp#7-9'></code></pre>
+                    <h4>fetch 7-9, skip sample line 2</h4>
+                    <pre><code data-sample='whole_file.cpp#7-9' data-sample-skip="2"></code></pre>
+                </section>
+
+                <section>
                     <h2>Remove indent</h2>
                     <pre><code data-sample='sample.c#6' data-sample-indent="remove"></code></pre>
                 </section>
@@ -117,7 +127,7 @@
 
                 <section>
                     <h2>Line numbers with offset</h2>
-                    <pre><code data-sample='whole_file.cpp#5-9' data-sample-line-numbers="42"></code></pre>
+                    <pre><code data-sample='whole_file.cpp#5-9' data-sample-line-numbers="8"></code></pre>
                 </section>
 
                 <section>
