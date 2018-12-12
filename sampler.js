@@ -17,7 +17,7 @@
      * @param {string} value
      * @param {number} targetLength
      * @param {string} [padString= ]
-     * @returns {*}
+     * @returns {string}
      */
     var stringPadStart = function(value, targetLength, padString) {
         padString = String(typeof padString !== 'undefined' ? padString : ' ');
@@ -329,6 +329,14 @@
         return result.length > 0 ? result : null;
     };
 
+    /**
+     * Expands line numbers and ranges to an object with the line index as key.
+     *
+     *     3-6,12 => {2: true, 3: true, 4: true, 5: true, 11: true}
+     *
+     * @param selector
+     * @returns {(null|{})}
+     */
     Sample.parseSelectorToLineIndex = function(selector) {
         var lines = {};
         var ranges = Sample.parseSelector(selector);
@@ -369,7 +377,7 @@
     };
 
     /**
-     * @param {bool} skipDelimiters
+     * @param {boolean} skipDelimiters
      * @param {number[]} skipLines - skip lines by index
      * @returns {SampleLine[]}
      */
@@ -402,10 +410,10 @@
         var line, lineNode, previousLineNode, lineText = null;
         var markedLinePattern = /(\s*(\/\/|#)\s*mark-sample\s*$)|(\s*\/\*\s*mark-sample\s*\*\/(\s*$)?)|(\s*<!--\s*mark-sample\s*-->(\s*$)?)/;
         var document = parentNode.ownerDocument;
-        var indentationOffset = (options.removeIndentation) ? this.getIndentationLength() : 0;
         var marked = Sample.parseSelectorToLineIndex(options.marked || '') || {};
         var lineNumberStart =  parseInt(options.lineNumbers) || 0, lineNumberSize;
         var lines = this.getLines(options.skip.delimiters, options.skip.lines);
+        var indentationOffset = (options.removeIndentation) ? this.getIndentationLength(lines) : 0;
         if (lines.length < 1) {
             return;
         }
@@ -446,11 +454,17 @@
         }
     };
 
-    Sample.prototype.getIndentationLength = function() {
+    /**
+     * Get the length of the shortest whitespace sequence at a line start
+     *
+     * @param {SampleLine[]} [lines]
+     * @returns {number}
+     */
+    Sample.prototype.getIndentationLength = function(lines) {
+        lines = lines instanceof Array ? lines : this._lines;
         return Math.min.apply(
             null,
-            this
-                ._lines
+            lines
                 .filter(
                     function (line) {
                         return line.text.trim() !== '';
