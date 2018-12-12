@@ -159,21 +159,17 @@
     /**
      * Get an array of lines specified by start index and size
      *
-     * @param {number} start
-     * @param {number} length
+     * @param {number} [start=0]
+     * @param {number} [length]
      * @returns {SampleLine[]}
      */
     SampleFile.prototype.getLines = function(start, length) {
+        start = start > 0 ? start : 0;
+        if (typeof length === 'undefined') {
+            return this._lines.slice(start);
+        }
         return this._lines.slice(start, start + length);
     };
-
-    /**
-     * @returns {SampleLine[]}
-     */
-    SampleFile.prototype.getAll = function() {
-        return this.getLines(0, this._lines.length);
-    };
-
 
     /**
      * Fetches the files, creates and returns SampleFile objects. It keeps
@@ -286,7 +282,7 @@
                 }.bind(sample)(file)
             );
         } else {
-            sample.add(file.getAll() || []);
+            sample.add(file.getLines() || []);
         }
         return sample;
     };
