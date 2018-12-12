@@ -60,7 +60,7 @@
                     case SampleFile.TOKEN_END_NAMED :
                         for (k = currentSnippets.length - 1; k >= 0; k--) {
                             if (currentSnippets[k] === token.name) {
-                                currentSnippets.slice(k, 1);
+                                currentSnippets.splice(k, 1);
                             }
                         }
                         break;
@@ -157,7 +157,8 @@
 
 
     /**
-     * Fetches the files, create and return SampleFile objects
+     * Fetches the files, creates and returns SampleFile objects. It keeps
+     * track of requests so that each file is requested once only.
      *
      * @constructor
      */
