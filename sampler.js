@@ -232,7 +232,6 @@
                     )
             }
         }
-        console.log(this._samples, this._lines);
     };
 
     /**
