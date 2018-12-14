@@ -153,7 +153,7 @@
     /**
      * @param {Number} lineNumber
      * @param {string} text
-     * @param {Number} type
+     * @param {Sampler.TokenMatcher.TOKEN} type
      * @constructor
      * @memberof Sampler
      *
@@ -423,6 +423,7 @@
 
     /**
      * Expands line numbers and ranges to an object with the line index as key.
+     *
      *     3-6,12 => {2: true, 3: true, 4: true, 5: true, 11: true}
      *
      * @param {string} selector
