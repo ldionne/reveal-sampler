@@ -15,7 +15,7 @@
  * Plugin initialization
  * @function
  */
-(function() {
+(function () {
 
     /**
      * @typedef Sampler.TokenPatterns
@@ -156,14 +156,19 @@
      * @param {Sampler.TokenMatcher.TOKEN} type
      * @constructor
      * @memberof Sampler
-     *
-     * @property {Number} lineNumber
-     * @property {string} text
-     * @property {Sampler.TokenMatcher.TOKEN} type
      */
     var Line = function (lineNumber, text, type) {
+        /**
+         * @type {Number}
+         */
         this.lineNumber = lineNumber;
+        /**
+         * @type {string}
+         */
         this.text = text || '';
+        /**
+         * @type {Sampler.TokenMatcher.TOKEN}
+         */
         this.type = type || TokenMatcher.TOKEN.LINE;
     };
 
@@ -180,7 +185,16 @@
         var lines = content.split(/\r?\n/);
         var line, currentSnippets = [], token, i, c, k;
         var lineType, lineText;
+
+        /**
+         * @private
+         * @type {Sampler.Line[]}
+         */
         this._lines = [];
+        /**
+         * @private
+         * @type {Object.<string, Sampler.Line[]>}
+         */
         this._samples = {};
 
         for (i = 0, c = lines.length; i < c; i++) {
@@ -261,6 +275,11 @@
     };
 
     /**
+     * @callback Sampler.Files.FetchSuccess
+     * @param {Sampler.File} file
+     */
+
+    /**
      * Fetches the files, creates and returns SampleFile objects. It keeps
      * track of requests so that each file is requested once only.
      *
@@ -269,15 +288,22 @@
      * @memberof Sampler
      */
     var Files = function (matcher) {
+        /**
+         * @private
+         * @type {Sampler.TokenMatcher}
+         */
         this._matcher = matcher;
+        /**
+         * @private
+         * @type {Object.<string, Sampler.File>}
+         */
         this._files = {};
+        /**
+         * @private
+         * @type {(boolean|Object.<string, {xhr: XMLHttpRequest, success: Sampler.Files.FetchSuccess[]}>)}
+         */
         this._requests = {};
     };
-
-    /**
-     * @callback Sampler.Files.FetchSuccess
-     * @param {Sampler.File} file
-     */
 
     /**
      * Fetch file and execute callback with created SampleFile object
@@ -338,15 +364,37 @@
     };
 
     /**
+     * @param {number} start
+     * @param {number} length
+     * @constructor
+     * @memberof Sampler
+     */
+    var LineRange = function (start, length) {
+        /** @type {number} **/
+        this.start = start;
+        /** @type {number} **/
+        this.length = length;
+    };
+
+    /**
+     * @param {string} name
+     * @constructor
+     * @memberof Sampler
+     */
+    var NamedRange = function (name) {
+        /** @type {string} **/
+        this.name = name;
+    };
+
+
+    /**
      * @constructor
      * @memberof Sampler
      */
     var Sample = function () {
+        /** @private */
         this._lines = [];
     };
-
-    Sample.RANGE_NUMBERS = 'NUMBERS';
-    Sample.RANGE_NAMED = 'NAMED';
 
     /**
      * Create a Sample from a file using a selector
@@ -363,13 +411,10 @@
                 function (file) {
                     return function (range) {
                         var lines = null;
-                        switch (range.type) {
-                            case Sample.RANGE_NUMBERS :
-                                lines = file.getLines(range.start, range.length);
-                                break;
-                            case Sample.RANGE_NAMED :
-                                lines = file.getSample(range.name);
-                                break;
+                        if (range instanceof LineRange) {
+                            lines = file.getLines(range.start, range.length);
+                        } else if (range instanceof NamedRange) {
+                            lines = file.getSample(range.name);
                         }
                         if (lines) {
                             this.add(lines);
@@ -386,7 +431,7 @@
     /**
      * Parse the selector in a list of range objects
      * @param {string} selector
-     * @returns {Array.<{type: string, start: number, length: number}|{type: string, name: string}>}
+     * @returns {Array.<Sampler.LineRange|Sampler.NamedRange>}
      */
     Sample.parseSelector = function (selector) {
         var ranges = selector.split(",") || [];
@@ -398,23 +443,12 @@
             if (range) {
                 start = parseInt(range[1]) || 0;
                 end = parseInt(range[2]) || start;
-                result.push(
-                    {
-                        type: Sample.RANGE_NUMBERS,
-                        start: start - 1,
-                        length: end - start + 1
-                    }
-                )
+                result.push(new LineRange(start - 1, end - start + 1));
             } else {
                 // otherwise treat it as a name
                 range = ranges[i].trim();
                 if (range !== '') {
-                    result.push(
-                        {
-                            type: Sample.RANGE_NAMED,
-                            name: range
-                        }
-                    )
+                    result.push(new NamedRange(range));
                 }
             }
         }
@@ -434,7 +468,7 @@
         var ranges = Sample.parseSelector(selector);
         if (ranges instanceof Array && ranges.length > 0) {
             for (var i = 0, c = ranges.length; i < c; i++) {
-                if (ranges[i] instanceof Object && ranges[i].type === Sample.RANGE_NUMBERS) {
+                if (ranges[i] instanceof LineRange) {
                     for (var x = 0; x < ranges[i].length; x++) {
                         lines[ranges[i].start + x] = true;
                     }
@@ -472,9 +506,11 @@
                     // skip delimiter lines if option is set
                     return !(
                         skipDelimiters &&
-                        line.type !== TokenMatcher.TOKEN.START_NAMED &&
-                        line.type !== TokenMatcher.TOKEN.END &&
-                        line.type !== TokenMatcher.TOKEN.END_NAMED
+                        (
+                            line.type === TokenMatcher.TOKEN.START_NAMED ||
+                            line.type === TokenMatcher.TOKEN.END ||
+                            line.type === TokenMatcher.TOKEN.END_NAMED
+                        )
                     );
                 }
             )
