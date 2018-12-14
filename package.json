@@ -1,0 +1,26 @@
+{
+    "name": "reveal-sampler",
+    "description": "Embed code samples from files into reveal.js presentations",
+    "main": "sampler.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "docs": "jsdoc -d docs/ sampler.js README.md"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ldionne/reveal-sampler.git"
+    },
+    "keywords": [
+        "reveal-js",
+        "reveal-plugin",
+        "slide",
+        "slide",
+        "sampler"
+    ],
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ldionne/reveal-sampler/issues"
+    },
+    "homepage": "https://github.com/ldionne/reveal-sampler#readme"
+}
