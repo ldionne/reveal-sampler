@@ -1,114 +1,228 @@
 /**
  * sampler.js is a plugin to display code samples from specially-formatted
  * source files in reveal.js slides.
+ *package
  *
- * See https://github.com/ldionne/reveal-sampler for documentation,
- * bug reports and more.
- *
- *
- * Author: Louis Dionne
- * License: MIT (see https://github.com/ldionne/reveal-sampler/blob/master/LICENSE.md)
+ * @namespace Sampler
+ * @author Louis Dionne
+ * @license MIT (https://github.com/ldionne/reveal-sampler/blob/master/LICENSE.md)
+ * @see {@link https://github.com/ldionne/reveal-sampler|GitHub} for documentation, bug reports and more.
  */
 
+'use strict';
+
+/**
+ * Plugin initialization
+ * @function
+ */
 (function() {
 
     /**
-     *
-     * @param {string} value
-     * @param {number} targetLength
-     * @param {string} [padString= ]
-     * @returns {string}
+     * @typedef Sampler.TokenPatterns
+     * @property {RegExp} [start] - sample start delimiter pattern
+     * @property {RegExp} [end] - sample end delimiter pattern
+     * @property {RegExp} [end_named] - sample named end delimiter pattern
+     * @property {RegExp} [skip] - skip line pattern
+     * @property {RegExp} [mark] - mark line pattern
      */
-    var stringPadStart = function(value, targetLength, padString) {
-        padString = String(typeof padString !== 'undefined' ? padString : ' ');
-        if (value.padStart instanceof Function) {
-            return value.padStart(targetLength, padString);
-        } else {
-            targetLength = targetLength >> 0;
-            value = String(value);
-            if (value.length >= targetLength) {
-                return value;
-            } else {
-                targetLength = targetLength - value.length;
-                if (targetLength > padString.length) {
-                    padString += padString.repeat(targetLength / padString.length);
+
+    /**
+     * Match line tokens with a generic and/or language specific patterns
+     *
+     * @param {Object.<string, Sampler.TokenPatterns>} patterns
+     * @constructor
+     * @memberof Sampler
+     */
+    var TokenMatcher = function (patterns) {
+        var language, patternName;
+        /**
+         * @type {Object.<string, Sampler.TokenPatterns>}
+         * @private
+         */
+        this._patterns = {
+            generic: {
+                start: /^[/*#\s]*sample\(([^)\r\n]+)\)/,
+                end_named: /^[/*#\s]*end-sample\(([^)\r\n]+)\)/,
+                end: /^[/*#\s]*end-sample/,
+                skip: /\bskip-sample\b/,
+                mark: /(\s*(\/\/|#)\s*mark-sample\s*$)|(\s*\/\*\s*mark-sample\s*\*\/(\s*$))/
+            },
+            xml: {
+                start: /^\s*<!--\s*sample\(([^)\r\n]+)\)/,
+                end_named: /^\s*<!--\s*end-sample\(([^)\r\n]+)\)/,
+                end: /^\s*<!--\s*end-sample/,
+                skip: /<!--\s*skip-sample\s*-->/,
+                mark: /\s*(<!--\s*mark-sample\s*-->\s*$)/
+            }
+        };
+        this._patterns.html = this._patterns.xml;
+        if (patterns instanceof Object) {
+            for (language in patterns) {
+                if (!patterns.hasOwnProperty(language)) {
+                    continue;
                 }
-                return padString.slice(0, targetLength) + value;
+                for (patternName in TokenMatcher.PATTERN_NAMES) {
+                    if (!TokenMatcher.PATTERN_NAMES.hasOwnProperty(patternName)) {
+                        continue;
+                    }
+                    if (patterns[language][patternName] instanceof RegExp) {
+                        this._patterns[language][name] = RegExp;
+                    } else {
+                        console.log('Ignored invalid pattern option for: ' + language + ':' + patternName);
+                    }
+                }
             }
         }
     };
 
     /**
+     * @typedef {number} Sampler.TokenMatcher.TOKEN
+     */
+
+    /**
+     * Token identifiers
+     *
+     * @readonly
+     * @enum {Sampler.TokenMatcher.TOKEN}
+     */
+    TokenMatcher.TOKEN = {
+        LINE: 0,
+        START_NAMED: 1,
+        END: 2,
+        END_NAMED: 3,
+        SKIP_LINE: 4,
+        MARK_LINE: 5
+    };
+
+    /**
+     * Map token option names to token identifiers
+     *
+     * @see Sampler.PluginConfiguration
+     *
+     * @readonly
+     * @enum {Sampler.TokenMatcher.TOKEN}
+     */
+    TokenMatcher.PATTERN_NAMES = {
+        start: TokenMatcher.TOKEN.START_NAMED,
+        end_named: TokenMatcher.TOKEN.END_NAMED,
+        end: TokenMatcher.TOKEN.END,
+        skip: TokenMatcher.TOKEN.SKIP_LINE,
+        mark: TokenMatcher.TOKEN.MARK_LINE
+    };
+
+    /**
+     * @param {string} name
+     * @param {string} language
+     * @returns {RegExp}
+     */
+    TokenMatcher.prototype.getPattern = function (name, language) {
+        if (this._patterns[language] && this._patterns[language][name]) {
+            return this._patterns[language][name];
+        }
+        if (this._patterns.generic && this._patterns.generic[name]) {
+            return this._patterns.generic[name];
+        }
+        throw "Can not find pattern for " + language + ":" + name;
+    };
+
+    /**
+     * @param {string} subject
+     * @param {string} language
+     * @returns {?{type:string, match:{}, pattern: RegExp}}
+     */
+    TokenMatcher.prototype.identify = function (subject, language) {
+        var token, pattern, match;
+        for (var patternName in TokenMatcher.PATTERN_NAMES) {
+            if (!TokenMatcher.PATTERN_NAMES.hasOwnProperty(patternName)) {
+                continue;
+            }
+            token = TokenMatcher.PATTERN_NAMES[patternName];
+            pattern = this.getPattern(patternName, language);
+            match = subject.match(pattern);
+            if (match) {
+                return {
+                    type: token,
+                    match: match,
+                    pattern: pattern
+                };
+            }
+        }
+        return null;
+    };
+
+    /**
      * @param {Number} lineNumber
      * @param {string} text
-     * @param {string|null} [tokenType]
+     * @param {Number} type
      * @constructor
+     * @memberof Sampler
      *
      * @property {Number} lineNumber
      * @property {string} text
-     * @property {string|null} [tokenType]
+     * @property {Sampler.TokenMatcher.TOKEN} type
      */
-    var SampleLine = function(lineNumber, text, tokenType) {
+    var Line = function (lineNumber, text, type) {
         this.lineNumber = lineNumber;
         this.text = text || '';
-        this.tokenType = tokenType || null;
+        this.type = type || TokenMatcher.TOKEN.LINE;
     };
 
     /**
      * SampleFile provides access to the lines and named samples in a file
      *
      * @param {string} content
+     * @param {Sampler.TokenMatcher} matcher
+     * @param {string} language
      * @constructor
+     * @memberof Sampler
      */
-    var SampleFile = function(content) {
+    var File = function (content, matcher, language) {
         var lines = content.split(/\r?\n/);
         var line, currentSnippets = [], token, i, c, k;
-        var parseLine = function(line) {
-            var match, token_definition;
-            for (var i = 0, c = SampleFile.TOKENS.length; i < c; i++) {
-                token_definition = SampleFile.TOKENS[i];
-                match = line.match(token_definition.pattern);
-                if (match) {
-                    return {
-                        type : token_definition.type,
-                        name : token_definition.nameIndex ? match[token_definition.nameIndex] : null
-                    }
-                }
-            }
-            return false;
-        };
+        var lineType, lineText;
         this._lines = [];
         this._samples = {};
+
         for (i = 0, c = lines.length; i < c; i++) {
-            token = parseLine(lines[i]);
+            lineType = TokenMatcher.TOKEN.LINE;
+            lineText = lines[i];
+            token = matcher.identify(lineText, language);
             if (token) {
-                this._lines.push(new SampleLine(i + 1, lines[i], token.type));
+                lineType = token.type;
                 switch (token.type) {
-                    case SampleFile.TOKEN_START_NAMED :
-                        currentSnippets.push(token.name);
+                    case TokenMatcher.TOKEN.START_NAMED :
+                        currentSnippets.push(token.match[1]);
                         break;
-                    case SampleFile.TOKEN_END_NAMED :
+                    case TokenMatcher.TOKEN.END_NAMED :
                         for (k = currentSnippets.length - 1; k >= 0; k--) {
-                            if (currentSnippets[k] === token.name) {
+                            if (currentSnippets[k] === token.match[1]) {
                                 currentSnippets.splice(k, 1);
                             }
                         }
                         break;
-                    case SampleFile.TOKEN_END :
+                    case TokenMatcher.TOKEN.END :
                         if (currentSnippets.length > 0) {
                             currentSnippets.pop();
                         }
                         break;
+                    case TokenMatcher.TOKEN.MARK_LINE :
+                        lineText = lineText.replace(token.pattern, '');
+                        break;
                 }
-            } else {
-                this._lines.push(line = new SampleLine(i + 1, lines[i]));
+            }
+            this._lines.push(
+                line = new Line(i + 1, lineText, lineType)
+            );
+            if (lineType === TokenMatcher.TOKEN.LINE || lineType === TokenMatcher.TOKEN.MARK_LINE) {
                 currentSnippets
                     .filter(
-                        function(value, index, self) { return self.indexOf(value) === index; }
+                        function (value, index, self) {
+                            return self.indexOf(value) === index;
+                        }
                     )
                     .forEach(
-                        function(index, line) {
-                            return function(name) {
+                        function (index, line) {
+                            return function (name) {
                                 if (!this._samples.hasOwnProperty(name)) {
                                     this._samples[name] = [];
                                 }
@@ -118,52 +232,28 @@
                     )
             }
         }
+        console.log(this._samples, this._lines);
     };
-
-    SampleFile.TOKEN_START_NAMED = 'SAMPLE_START_NAMED';
-    SampleFile.TOKEN_END_NAMED = 'SAMPLE_END_NAMED';
-    SampleFile.TOKEN_END = 'SAMPLE_END';
-
-    // define patterns for snippet delimiters
-    SampleFile.TOKENS = [
-        {
-            type: SampleFile.TOKEN_START_NAMED,
-            // expects: sample(snippet-name)
-            pattern : /^[/*#\s]*sample\(([^)\r\n]+)\)/,
-            nameIndex : 1
-        },
-        {
-            type: SampleFile.TOKEN_END_NAMED,
-            // expects: end-sample(snippet-name)
-            pattern: /^[/*#\s]*end-sample\(([^)\r\n]+)\)/,
-            nameIndex: 1
-        },
-        {
-            type: SampleFile.TOKEN_END,
-            // expects: end-sample
-            pattern: /^[/*#\s]*end-sample/,
-            nameIndex: null
-        }
-    ];
 
     /**
      * Get an array of lines
      *
-     * @param {string} name
-     * @returns {SampleLine[]}
+     * @param {string} name - sample name
+     * @returns {?Sampler.Line[]} - array of sample lines
      */
-    SampleFile.prototype.getSample = function(name) {
+    File.prototype.getSample = function (name) {
         return this._samples[name] || null;
     };
 
     /**
-     * Get an array of lines specified by start index and size
+     * Get an array of lines specified by start index and length. If
+     * length is not provided it will return all following lines.
      *
-     * @param {number} [start=0]
-     * @param {number} [length]
-     * @returns {SampleLine[]}
+     * @param {number} [start=0] - start index
+     * @param {number} [length] - amount of lines
+     * @returns {Sampler.Line[]}
      */
-    SampleFile.prototype.getLines = function(start, length) {
+    File.prototype.getLines = function (start, length) {
         start = start > 0 ? start : 0;
         if (typeof length === 'undefined') {
             return this._lines.slice(start);
@@ -175,28 +265,32 @@
      * Fetches the files, creates and returns SampleFile objects. It keeps
      * track of requests so that each file is requested once only.
      *
+     * @param {Sampler.TokenMatcher} matcher
      * @constructor
+     * @memberof Sampler
      */
-    var SampleFiles = function() {
+    var Files = function (matcher) {
+        this._matcher = matcher;
         this._files = {};
         this._requests = {};
     };
 
     /**
-     * @callback SampleFilesFetchSuccess
-     * @param {SampleFile} file
+     * @callback Sampler.Files.FetchSuccess
+     * @param {Sampler.File} file
      */
 
     /**
      * Fetch file and execute callback with created SampleFile object
      *
      * @param {string} url
-     * @param {SampleFilesFetchSuccess} success
+     * @param {string} language
+     * @param {Sampler.Files.FetchSuccess} success
      */
-    SampleFiles.prototype.fetch = function(url, success) {
+    Files.prototype.fetch = function (url, language, success) {
         var file, request;
         file = this._files[url] || null;
-        if (file instanceof SampleFile) {
+        if (file instanceof File) {
             // found existing file object, execute callback
             success(file);
         }
@@ -207,23 +301,25 @@
         } else if (request === null) {
             // create and store a new request
             this._requests[url] = request = {
-                xhr : new XMLHttpRequest(),
-                success : [success]
+                xhr: new XMLHttpRequest(),
+                success: [success]
             };
-            request.xhr.onreadystatechange = function(url, request) {
-                return function() {
+            request.xhr.onreadystatechange = function (url, language, request) {
+                return function () {
                     if (request.xhr.readyState === XMLHttpRequest.DONE) {
                         if (
                             (request.xhr.status >= 200 && request.xhr.status < 300) ||
                             (request.xhr.status === 0 && request.xhr.responseText !== '')
                         ) {
-                            this._files[url] = file = new SampleFile(request.xhr.responseText);
+                            this._files[url] = file = new File(
+                                request.xhr.responseText, this._matcher, language
+                            );
                             request.success.forEach(
-                              function(file) {
-                                  return function(success) {
-                                      success(file);
-                                  }
-                              }(file)
+                                function (file) {
+                                    return function (success) {
+                                        success(file);
+                                    }
+                                }(file)
                             );
                             this._requests[url] = true;
                         } else {
@@ -232,12 +328,11 @@
                         }
                     }
                 }.bind(this)
-            }.bind(this)(url, request);
+            }.bind(this)(url, language, request);
             request.xhr.open("GET", url);
             try {
                 request.xhr.send();
-            }
-            catch (e) {
+            } catch (e) {
                 console.log('Error requesting file: ' + url);
             }
         }
@@ -245,8 +340,9 @@
 
     /**
      * @constructor
+     * @memberof Sampler
      */
-    var Sample = function() {
+    var Sample = function () {
         this._lines = [];
     };
 
@@ -255,17 +351,18 @@
 
     /**
      * Create a Sample from a file using a selector
-     * @param {SampleFile} file
+     * @param {Sampler.File} file
      * @param {string} selector
+     * @returns {Sampler.Sample}
      */
-    Sample.createFromFile = function(file, selector) {
+    Sample.createFromFile = function (file, selector) {
         var sample = new Sample();
         var ranges;
         if (selector) {
             ranges = Sample.parseSelector(selector);
             ranges.forEach(
-                function(file) {
-                    return function(range) {
+                function (file) {
+                    return function (range) {
                         var lines = null;
                         switch (range.type) {
                             case Sample.RANGE_NUMBERS :
@@ -289,10 +386,10 @@
 
     /**
      * Parse the selector in a list of range objects
-     * @param selector
-     * @returns {({type, start, length}[]|{type, name}[])}
+     * @param {string} selector
+     * @returns {Array.<{type: string, start: number, length: number}|{type: string, name: string}>}
      */
-    Sample.parseSelector = function(selector) {
+    Sample.parseSelector = function (selector) {
         var ranges = selector.split(",") || [];
         var range, start, end;
         var result = [];
@@ -327,13 +424,12 @@
 
     /**
      * Expands line numbers and ranges to an object with the line index as key.
-     *
      *     3-6,12 => {2: true, 3: true, 4: true, 5: true, 11: true}
      *
-     * @param selector
-     * @returns {(null|{})}
+     * @param {string} selector
+     * @returns {?Object.<number, boolean>}
      */
-    Sample.parseSelectorToLineIndex = function(selector) {
+    Sample.parseSelectorToLineIndex = function (selector) {
         var lines = {};
         var ranges = Sample.parseSelector(selector);
         if (ranges instanceof Array && ranges.length > 0) {
@@ -350,23 +446,14 @@
     };
 
     /**
-     * @param {SampleLine[]} lines
+     * @param {Sampler.Line[]} lines
      */
-    Sample.prototype.add = function(lines) {
+    Sample.prototype.add = function (lines) {
         this._lines.push.apply(
             this._lines,
             lines.filter(
-                /**
-                 * Skip lines that contain the `skip-sample` tag.
-                 *
-                 * @param {SampleLine} line
-                 * @returns {boolean}
-                 */
-                function(line) {
-                    return (
-                        line instanceof SampleLine &&
-                        !line.text.match(/\bskip-sample\b/)
-                    );
+                function (line) {
+                    return line.type !== TokenMatcher.TOKEN.SKIP_LINE;
                 }
             )
         );
@@ -375,15 +462,20 @@
     /**
      * @param {boolean} skipDelimiters
      * @param {number[]} skipLines - skip lines by index
-     * @returns {SampleLine[]}
+     * @returns {Sampler.Line[]}
      */
-    Sample.prototype.getLines = function(skipDelimiters, skipLines) {
+    Sample.prototype.getLines = function (skipDelimiters, skipLines) {
         var lines = this._lines;
         if (skipDelimiters) {
             lines = lines.filter(
                 function (line) {
                     // skip delimiter lines if option is set
-                    return !(skipDelimiters && line.tokenType !== null);
+                    return !(
+                        skipDelimiters &&
+                        line.type !== TokenMatcher.TOKEN.START_NAMED &&
+                        line.type !== TokenMatcher.TOKEN.END &&
+                        line.type !== TokenMatcher.TOKEN.END_NAMED
+                    );
                 }
             )
         }
@@ -399,15 +491,23 @@
     };
 
     /**
-     * @param {HTMLElement} parentNode
-     * @param {{removeIndentation: boolean, marked: string, lineNumbers, skip: {}}} options
+     * @typedef Sampler.Sample.AppendOptions
+     * @property {boolean} removeIndentation
+     * @property {string} marked
+     * @property {(boolean|number|'original')} lineNumbers
+     * @property {Object} skip
      */
-    Sample.prototype.appendTo = function(parentNode, options) {
+
+    /**
+     * @param {HTMLElement} parentNode
+     * @param {Sampler.Sample.AppendOptions} options
+     * @returns {void}
+     */
+    Sample.prototype.appendTo = function (parentNode, options) {
         var line, lineNode, previousLineNode, lineText = null;
-        var markedLinePattern = /(\s*(\/\/|#)\s*mark-sample\s*$)|(\s*\/\*\s*mark-sample\s*\*\/(\s*$)?)|(\s*<!--\s*mark-sample\s*-->(\s*$)?)/;
         var document = parentNode.ownerDocument;
         var marked = Sample.parseSelectorToLineIndex(options.marked || '') || {};
-        var lineNumberStart =  parseInt(options.lineNumbers) || 0, lineNumberSize;
+        var lineNumberStart = parseInt(options.lineNumbers) || 0, lineNumberSize;
         var lines = this.getLines(options.skip.delimiters, options.skip.lines);
         var indentationOffset = (options.removeIndentation) ? this.getIndentationLength(lines) : 0;
         if (lines.length < 1) {
@@ -428,15 +528,13 @@
             lineNode = parentNode.appendChild(document.createElement('span'));
             lineNode.setAttribute('class', 'line');
             if (options.lineNumbers === 'original') {
-                lineNode.setAttribute('data-line-number', stringPadStart(line.lineNumber.toString(), lineNumberSize));
+                // noinspection JSUnresolvedFunction
+                lineNode.setAttribute('data-line-number', String(line.lineNumber).padStart(lineNumberSize));
             } else if (lineNumberStart > 0) {
-                lineNode.setAttribute('data-line-number', stringPadStart((lineNumberStart + i).toString(), lineNumberSize));
+                // noinspection JSUnresolvedFunction
+                lineNode.setAttribute('data-line-number', String(lineNumberStart + i).padStart(lineNumberSize));
             }
-            if (lineText.match(markedLinePattern)) {
-                lineNode
-                    .appendChild(document.createElement('mark'))
-                    .appendChild(document.createTextNode(lineText.replace(markedLinePattern, '')));
-            } else if (marked[i]) {
+            if (line.type === TokenMatcher.TOKEN.MARK_LINE || marked[i]) {
                 lineNode
                     .appendChild(document.createElement('mark'))
                     .appendChild(document.createTextNode(lineText));
@@ -453,10 +551,10 @@
     /**
      * Get the length of the shortest whitespace sequence at a line start
      *
-     * @param {SampleLine[]} [lines]
+     * @param {Sampler.Line[]} [lines]
      * @returns {number}
      */
-    Sample.prototype.getIndentationLength = function(lines) {
+    Sample.prototype.getIndentationLength = function (lines) {
         lines = lines instanceof Array ? lines : this._lines;
         return Math.min.apply(
             null,
@@ -467,54 +565,85 @@
                     }
                 )
                 .map(
-                function (line) {
-                    var indentation = line.text.match(/^[ \t]+/);
-                    return indentation ? indentation[0].length : 0
-                }
-            )
+                    function (line) {
+                        var indentation = line.text.match(/^[ \t]+/);
+                        return indentation ? indentation[0].length : 0
+                    }
+                )
         ) || 0;
     };
 
-    // Read configuration options
+    /**
+     * @typedef Sampler.PluginConfiguration
+     *
+     * @property {boolean} [removeIndentation] - remove indentation (un-indent source snippet)
+     * @property {(boolean|'original')} [lineNumbers] - show line numbers
+     * @property {(string|string[])} [skip] - skip specific lines by time (delimiter)
+     * @property {string} [proxyURL] - fetch source files using a proxy script
+     * @property {Object.<string, Sampler.TokenPatterns>} [patterns] - language specific patterns
+     */
+
+    /**
+     * Read sampler plugin options from reveal.js configuration
+     * @type {{?sampler: Sampler.PluginConfiguration}}
+     */
     var config = Reveal.getConfig() || {};
     config.sampler = config.sampler || {};
+
+    /**
+     * @type {Sampler.PluginConfiguration}
+     */
     var options = {
-        proxyURL: config.sampler.proxyURL || '',
         removeIndentation: !!config.sampler.removeIndentation,
+        lineNumbers: [true, 'original'].indexOf(config.sampler.lineNumbers) !== -1
+            ? config.sampler.lineNumbers : false,
         skip: config.sampler.skip instanceof Array
             ? config.sampler.skip : (config.sampler.skip || '').split(/[,\s]+/),
-        lineNumbers: [true, 'original'].indexOf(config.sampler.lineNumbers) !== -1
-            ? config.sampler.lineNumbers : false
+        proxyURL: config.sampler.proxyURL || '',
+        patterns: config.sampler.patterns || null
     };
 
-    // add some CSS to make the line numbers visible
-    var style =
-        "[data-sample] [data-line-number]:before {\n" +
-        "   content: attr(data-line-number) ': ';\n" +
-        "}";
-    var styleNode = document.createElement('style');
-    styleNode.setAttribute('type', 'text/css');
-    styleNode.appendChild(document.createTextNode(style));
-    document.head.appendChild(styleNode);
+    (function () {
+        // add some CSS to make the line numbers visible
+        var style =
+            "[data-sample] [data-line-number]:before {\n" +
+            "   content: attr(data-line-number) ': ';\n" +
+            "}";
+        var styleNode = document.createElement('style');
+        styleNode.setAttribute('type', 'text/css');
+        styleNode.appendChild(document.createTextNode(style));
+        document.head.appendChild(styleNode);
+    })();
 
-    var files = new SampleFiles();
+    var files = new Files(new TokenMatcher(options.patterns));
     var elements = document.querySelectorAll('[data-sample]');
     elements.forEach(
         /**
          *
          * @param {HTMLElement} element
          */
-        function(element) {
+        function (element) {
             var slug = element.getAttribute('data-sample').match(/([^#]+)(?:#(.+))?/);
             var url = options.proxyURL + slug[1];
             var selector = slug[2] || '';
 
+            // Add the right `language-xyz` class to the code block, if required.
+            var language = url.split('.').pop().toLowerCase();
+            var classString = element.getAttribute('class') || '';
+            var classMatch = classString.match(/(?:^|\s)lang(?:uage)?-([a-z\d]+)/);
+            if (classMatch) {
+                language = classMatch[1];
+            } else {
+                element.setAttribute('class', classString + ' language-' + language);
+            }
+
             files.fetch(
                 url,
+                language,
                 function (sampleFile) {
                     var sample = Sample.createFromFile(sampleFile, selector);
                     var attributes = {
-                        mark : element.getAttribute('data-sample-mark') || '',
+                        mark: element.getAttribute('data-sample-mark') || '',
                         indent: element.getAttribute('data-sample-indent'),
                         skip: (element.getAttribute('data-sample-skip') || options.skip.join(',')),
                         lineNumbers: element.getAttribute('data-sample-line-numbers')
@@ -540,13 +669,6 @@
                             lineNumbers: attributes.lineNumbers || options.lineNumbers
                         }
                     );
-
-                    // Add the right `language-xyz` class to the code block, if required.
-                    var extension = url.split('.').pop();
-                    var classString = element.getAttribute('class') || '';
-                    if (!classString.match(/(^|\s)lang(uage)?-/)) {
-                        element.setAttribute('class', classString + ' language-' + extension);
-                    }
                     if (typeof hljs !== 'undefined') {
                         hljs.highlightBlock(element);
                     }
@@ -554,5 +676,4 @@
             );
         }
     );
-
 })();
