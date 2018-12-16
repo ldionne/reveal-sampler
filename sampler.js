@@ -1,7 +1,6 @@
 /**
  * sampler.js is a plugin to display code samples from specially-formatted
  * source files in reveal.js slides.
- *package
  *
  * @namespace Sampler
  * @author Louis Dionne
