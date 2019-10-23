@@ -199,6 +199,9 @@
         for (i = 0, c = lines.length; i < c; i++) {
             lineType = TokenMatcher.TOKEN.LINE;
             lineText = lines[i];
+            if (i === c - 1 && lineText === '') {
+                break;
+            }
             token = matcher.identify(lineText, language);
             if (token) {
                 lineType = token.type;
