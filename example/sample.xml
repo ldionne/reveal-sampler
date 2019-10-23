@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<contact>
+    <firstName>John</firstName>
+    <lastName>Smith</lastName>
+    <age>25</age>
+    <!-- sample(address) -->
+    <address>
+        <streetAddress>21 2nd Street</streetAddress> <!-- mark-sample -->
+        <city>New York</city>
+        <state>NY</state> <!-- skip-sample -->
+        <postalCode>10021</postalCode>
+    </address>
+    <!-- end-sample -->
+    <phoneNumbers>
+        <phoneNumber>
+            <type>home</type>
+            <number>212 555-1234</number>
+        </phoneNumber>
+        <phoneNumber>
+            <type>fax</type>
+            <number>646 555-4567</number>
+        </phoneNumber>
+    </phoneNumbers>
+</contact>
